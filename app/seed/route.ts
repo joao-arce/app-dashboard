@@ -1,4 +1,4 @@
- import bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
  import { db } from '@vercel/postgres';
  import { invoices, customers, revenue, users } from '../lib/placeholder-data';
  const client = await db.connect();
@@ -28,7 +28,6 @@
  }
  async function seedInvoices() {
    await client.sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
-
    await client.sql`
      CREATE TABLE IF NOT EXISTS invoices (
        id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -38,7 +37,6 @@
        date DATE NOT NULL
      );
    `;
-
    const insertedInvoices = await Promise.all(
      invoices.map(
        (invoice) => client.sql`
@@ -48,6 +46,7 @@
        `,
      ),
    );
+
    return insertedInvoices;
  }
 
@@ -61,7 +60,6 @@
        image_url VARCHAR(255) NOT NULL
      );
    `;
-
    const insertedCustomers = await Promise.all(
      customers.map(
        (customer) => client.sql`
@@ -81,7 +79,6 @@
        revenue INT NOT NULL
      );
    `;
-
    const insertedRevenue = await Promise.all(
      revenue.map(
        (rev) => client.sql`
@@ -99,4 +96,17 @@ export async function GET() {
     message:
       'Uncomment this file and remove this line. You can delete this file when you are finished.',
   });
+try {
+     await client.sql`BEGIN`;
+     await seedUsers();
+     await seedCustomers();
+     await seedInvoices();
+     await seedRevenue();
+     await client.sql`COMMIT`;
+
+     return Response.json({ message: 'Database seeded successfully' });
+   } catch (error) {
+     await client.sql`ROLLBACK`;
+     return Response.json({ error }, { status: 500 });
+   }
 }
